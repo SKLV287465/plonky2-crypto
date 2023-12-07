@@ -11,7 +11,7 @@ use plonky2::iop::generator::{GeneratedValues, SimpleGenerator};
 use plonky2::iop::target::{BoolTarget, Target};
 use plonky2::iop::witness::{PartitionWitness, Witness};
 use plonky2::plonk::circuit_builder::CircuitBuilder;
-use plonky2::util::serialization::{Buffer, IoResult};
+use plonky2::util::serialization::{Buffer, IoResult, Read, Write};
 
 use crate::u32::gadgets::arithmetic_u32::{CircuitBuilderU32, U32Target};
 use crate::u32::gadgets::multiple_comparison::list_le_u32_circuit;
@@ -29,6 +29,22 @@ impl BigUintTarget {
 
     pub fn get_limb(&self, i: usize) -> U32Target {
         self.limbs[i]
+    }
+
+    fn write(&self, dst: &mut Vec<u8>) -> IoResult<()> {
+        dst.write_usize(self.limbs.len())?;
+        for limb in &self.limbs {
+            dst.write_target(limb.0)?;
+        }
+        Ok(())
+    }
+    fn read(src: &mut Buffer) -> IoResult<Self> {
+        let num_limbs = src.read_usize()?;
+        let mut limbs = Vec::with_capacity(num_limbs);
+        for _ in 0..num_limbs {
+            limbs.push(U32Target(src.read_target()?));
+        }
+        Ok(Self { limbs })
     }
 }
 
@@ -469,15 +485,23 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
         out_buffer.set_biguint_target(&self.rem, &rem);
     }
 
-    fn serialize(&self, _dst: &mut Vec<u8>, c: &CommonCircuitData<F, D>) -> IoResult<()> {
-        todo!()
+    fn serialize(&self, dst: &mut Vec<u8>, c: &CommonCircuitData<F, D>) -> IoResult<()> {
+        self.a.write(dst)?;
+        self.b.write(dst)?;
+        self.div.write(dst)?;
+        self.rem.write(dst)?;
+        Ok(())
     }
 
-    fn deserialize(_src: &mut Buffer, c: &CommonCircuitData<F, D>) -> IoResult<Self>
+    fn deserialize(src: &mut Buffer, c: &CommonCircuitData<F, D>) -> IoResult<Self>
     where
         Self: Sized,
     {
-        todo!()
+        let a = BigUintTarget::read(src)?;
+        let b = BigUintTarget::read(src)?;
+        let div = BigUintTarget::read(src)?;
+        let rem = BigUintTarget::read(src)?;
+        Ok(Self { a, b, div, rem,_phantom:PhantomData })
     }
 }
 

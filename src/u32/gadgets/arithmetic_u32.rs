@@ -9,7 +9,7 @@ use plonky2::iop::generator::{GeneratedValues, SimpleGenerator};
 use plonky2::iop::target::Target;
 use plonky2::iop::witness::{PartitionWitness, Witness};
 use plonky2::plonk::circuit_builder::CircuitBuilder;
-use plonky2::util::serialization::{Buffer, IoResult};
+use plonky2::util::serialization::{Buffer, IoResult, Write, Read};
 
 use crate::u32::gates::add_many_u32::U32AddManyGate;
 use crate::u32::gates::arithmetic_u32::U32ArithmeticGate;
@@ -267,15 +267,24 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
         out_buffer.set_u32_target(self.high, high);
     }
 
-    fn serialize(&self, _dst: &mut Vec<u8>, c: &CommonCircuitData<F, D>) -> IoResult<()> {
-        todo!()
+    fn serialize(&self, dst: &mut Vec<u8>, c: &CommonCircuitData<F, D>) -> IoResult<()> {
+        dst.write_target(self.x)?;
+        dst.write_target(self.low.0)?;
+        dst.write_target(self.high.0)?;
+        Ok(())
     }
 
-    fn deserialize(_src: &mut Buffer, c: &CommonCircuitData<F, D>) -> IoResult<Self>
+    fn deserialize(src: &mut Buffer, c: &CommonCircuitData<F, D>) -> IoResult<Self>
     where
         Self: Sized,
     {
-        todo!()
+        let x = src.read_target()?;
+        let low = src.read_target()?;
+        let high = src.read_target()?;
+        Ok(Self {
+            x,low: U32Target(low), high: U32Target(high),_phantom:PhantomData
+        })
+        
     }
 }
 

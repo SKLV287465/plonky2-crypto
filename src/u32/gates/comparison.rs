@@ -1,8 +1,10 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 use alloc::{format, vec};
+use anyhow::Ok;
 use core::marker::PhantomData;
 use plonky2::plonk::circuit_data::CommonCircuitData;
+use std::result::Result as RR;
 
 use plonky2::field::extension::Extendable;
 use plonky2::field::packed::PackedField;
@@ -22,7 +24,7 @@ use plonky2::plonk::vars::{
     EvaluationTargets, EvaluationVars, EvaluationVarsBase, EvaluationVarsBaseBatch,
     EvaluationVarsBasePacked,
 };
-use plonky2::util::serialization::{Buffer, IoResult};
+use plonky2::util::serialization::{Buffer, IoResult, Write, Read};
 use plonky2::util::{bits_u64, ceil_div_usize};
 
 /// A gate for checking that one value is less than or equal to another.
@@ -99,15 +101,21 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for ComparisonGate
         format!("{self:?}<D={D}>")
     }
 
-    fn serialize(&self, _dst: &mut Vec<u8>, _: &CommonCircuitData<F, D>) -> IoResult<()> {
-        todo!()
+    fn serialize(&self, dst: &mut Vec<u8>, c: &CommonCircuitData<F, D>) -> IoResult<()> {
+        dst.write_usize(self.num_bits)?;
+        dst.write_usize(self.num_chunks)?;
+        RR::Ok(())
     }
 
-    fn deserialize(_src: &mut Buffer, _: &CommonCircuitData<F, D>) -> IoResult<Self>
+    fn deserialize(src: &mut Buffer, c: &CommonCircuitData<F, D>) -> IoResult<Self>
     where
         Self: Sized,
     {
-        todo!()
+        RR::Ok(Self {
+            num_bits: src.read_usize()?,
+            num_chunks: src.read_usize()?,
+            _phantom: PhantomData,
+        })
     }
 
     fn eval_unfiltered(&self, vars: EvaluationVars<F, D>) -> Vec<F::Extension> {
@@ -529,15 +537,19 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
         }
     }
 
-    fn serialize(&self, _dst: &mut Vec<u8>, _: &CommonCircuitData<F, D>) -> IoResult<()> {
-        todo!()
+    fn serialize(&self, dst: &mut Vec<u8>, c: &CommonCircuitData<F, D>) -> IoResult<()> {
+        dst.write_usize(self.row)?;
+        self.gate.serialize(dst, c)?;
+        RR::Ok(())
     }
 
-    fn deserialize(_src: &mut Buffer, _: &CommonCircuitData<F, D>) -> IoResult<Self>
+    fn deserialize(src: &mut Buffer, c: &CommonCircuitData<F, D>) -> IoResult<Self>
     where
         Self: Sized,
     {
-        todo!()
+        let row = src.read_usize()?;
+        let gate = ComparisonGate::deserialize(src, c)?;
+        RR::Ok(Self { row, gate })
     }
 }
 
