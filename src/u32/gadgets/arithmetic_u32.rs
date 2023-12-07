@@ -9,14 +9,14 @@ use plonky2::iop::generator::{GeneratedValues, SimpleGenerator};
 use plonky2::iop::target::Target;
 use plonky2::iop::witness::{PartitionWitness, Witness};
 use plonky2::plonk::circuit_builder::CircuitBuilder;
-use plonky2::util::serialization::{Buffer, IoResult, Write, Read};
+use plonky2::util::serialization::{Buffer, IoResult, Read, Write};
 
 use crate::u32::gates::add_many_u32::U32AddManyGate;
 use crate::u32::gates::arithmetic_u32::U32ArithmeticGate;
 use crate::u32::gates::subtraction_u32::U32SubtractionGate;
 use crate::u32::witness::GeneratedValuesU32;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct U32Target(pub Target);
 
 pub trait CircuitBuilderU32<F: RichField + Extendable<D>, const D: usize> {
@@ -238,8 +238,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderU32<F, D>
     }
 }
 
-#[derive(Debug)]
-struct SplitToU32Generator<F: RichField + Extendable<D>, const D: usize> {
+#[derive(Debug, Default)]
+pub struct SplitToU32Generator<F: RichField + Extendable<D>, const D: usize> {
     x: Target,
     low: U32Target,
     high: U32Target,
@@ -282,9 +282,11 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
         let low = src.read_target()?;
         let high = src.read_target()?;
         Ok(Self {
-            x,low: U32Target(low), high: U32Target(high),_phantom:PhantomData
+            x,
+            low: U32Target(low),
+            high: U32Target(high),
+            _phantom: PhantomData,
         })
-        
     }
 }
 

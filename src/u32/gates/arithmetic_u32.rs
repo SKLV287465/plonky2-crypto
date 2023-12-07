@@ -22,10 +22,10 @@ use plonky2::plonk::vars::{
     EvaluationTargets, EvaluationVars, EvaluationVarsBase, EvaluationVarsBaseBatch,
     EvaluationVarsBasePacked,
 };
-use plonky2::util::serialization::{Buffer, IoResult, Write, Read};
+use plonky2::util::serialization::{Buffer, IoResult, Read, Write};
 
 /// A gate to perform a basic mul-add on 32-bit values (we assume they are range-checked beforehand).
-#[derive(Copy, Clone, Debug)]
+#[derive(Default, Copy, Clone, Debug)]
 pub struct U32ArithmeticGate<F: RichField + Extendable<D>, const D: usize> {
     pub num_ops: usize,
     _phantom: PhantomData<F>,
@@ -354,8 +354,8 @@ impl<F: RichField + Extendable<D>, const D: usize> PackedEvaluableBase<F, D>
     }
 }
 
-#[derive(Clone, Debug)]
-struct U32ArithmeticGenerator<F: RichField + Extendable<D>, const D: usize> {
+#[derive(Default, Clone, Debug)]
+pub struct U32ArithmeticGenerator<F: RichField + Extendable<D>, const D: usize> {
     gate: U32ArithmeticGate<F, D>,
     row: usize,
     i: usize,
@@ -431,7 +431,7 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
         }
     }
 
-    fn serialize(&self, dst: &mut Vec<u8>, c : &CommonCircuitData<F, D>) -> IoResult<()> {
+    fn serialize(&self, dst: &mut Vec<u8>, c: &CommonCircuitData<F, D>) -> IoResult<()> {
         self.gate.serialize(dst, c)?;
         dst.write_usize(self.row)?;
         dst.write_usize(self.i)?;
@@ -450,7 +450,7 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
             row,
             i,
             _phantom: PhantomData,
-        }) 
+        })
     }
 }
 

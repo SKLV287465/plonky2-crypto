@@ -17,7 +17,7 @@ use crate::u32::gadgets::arithmetic_u32::{CircuitBuilderU32, U32Target};
 use crate::u32::gadgets::multiple_comparison::list_le_u32_circuit;
 use crate::u32::witness::{GeneratedValuesU32, WitnessU32};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct BigUintTarget {
     pub limbs: Vec<U32Target>,
 }
@@ -448,8 +448,8 @@ impl<F: PrimeField> GeneratedValuesBigUint<F> for GeneratedValues<F> {
     }
 }
 
-#[derive(Debug)]
-struct BigUintDivRemGenerator<F: RichField + Extendable<D>, const D: usize> {
+#[derive(Debug, Default)]
+pub struct BigUintDivRemGenerator<F: RichField + Extendable<D>, const D: usize> {
     a: BigUintTarget,
     b: BigUintTarget,
     div: BigUintTarget,
@@ -501,7 +501,13 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
         let b = BigUintTarget::read(src)?;
         let div = BigUintTarget::read(src)?;
         let rem = BigUintTarget::read(src)?;
-        Ok(Self { a, b, div, rem,_phantom:PhantomData })
+        Ok(Self {
+            a,
+            b,
+            div,
+            rem,
+            _phantom: PhantomData,
+        })
     }
 }
 
