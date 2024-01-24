@@ -28,7 +28,7 @@ use plonky2::util::serialization::{Buffer, IoResult, Read, Write};
 use plonky2::util::{bits_u64, ceil_div_usize};
 
 /// A gate for checking that one value is less than or equal to another.
-#[derive(Default,Clone, Debug)]
+#[derive(Default, Clone, Debug)]
 pub struct ComparisonGate<F: Field64 + Extendable<D>, const D: usize> {
     pub(crate) num_bits: usize,
     pub(crate) num_chunks: usize,
@@ -425,7 +425,7 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
     for ComparisonGenerator<F, D>
 {
     fn id(&self) -> String {
-        format!("comparison_{}", self.row)
+        format!("comparison")
     }
 
     fn dependencies(&self) -> Vec<Target> {

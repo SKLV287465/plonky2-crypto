@@ -280,7 +280,7 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
     for U32InterleaveGenerator
 {
     fn id(&self) -> String {
-        format!("u32_interleave_{}_{}", self.row, self.i)
+        format!("u32_interleave")
     }
 
     fn dependencies(&self) -> Vec<Target> {

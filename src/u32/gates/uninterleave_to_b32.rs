@@ -316,7 +316,7 @@ impl<F: RichField + Extendable<D>, const D: usize> PackedEvaluableBase<F, D>
     }
 }
 
-#[derive(Debug,Default)]
+#[derive(Debug, Default)]
 pub struct UninterleaveToB32Generator {
     gate: UninterleaveToB32Gate,
     row: usize,
@@ -328,7 +328,7 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
     for UninterleaveToB32Generator
 {
     fn id(&self) -> String {
-        format!("uninterleave_to_b32_{}_{}", self.row, self.i)
+        format!("uninterleave_to_b32")
     }
 
     fn dependencies(&self) -> Vec<Target> {

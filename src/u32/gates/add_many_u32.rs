@@ -301,7 +301,7 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
     for U32AddManyGenerator<F, D>
 {
     fn id(&self) -> String {
-        format!("u32_add_many_{}_{}", self.row, self.i)
+        format!("u32_add_many")
     }
 
     fn dependencies(&self) -> Vec<Target> {

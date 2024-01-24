@@ -25,7 +25,7 @@ use plonky2::util::serialization::{Buffer, IoResult, Read, Write};
 
 /// A gate to perform a subtraction on 32-bit limbs: given `x`, `y`, and `borrow`, it returns
 /// the result `x - y - borrow` and, if this underflows, a new `borrow`. Inputs are not range-checked.
-#[derive(Copy, Clone, Debug,Default)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct U32SubtractionGate<F: RichField + Extendable<D>, const D: usize> {
     pub num_ops: usize,
     _phantom: PhantomData<F>,
@@ -277,7 +277,7 @@ impl<F: RichField + Extendable<D>, const D: usize> PackedEvaluableBase<F, D>
     }
 }
 
-#[derive(Clone, Debug,Default)]
+#[derive(Clone, Debug, Default)]
 pub struct U32SubtractionGenerator<F: RichField + Extendable<D>, const D: usize> {
     gate: U32SubtractionGate<F, D>,
     row: usize,
@@ -289,7 +289,7 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
     for U32SubtractionGenerator<F, D>
 {
     fn id(&self) -> String {
-        format!("u32_subtraction_{}_{}", self.row, self.i)
+        format!("u32_subtraction")
     }
 
     fn dependencies(&self) -> Vec<Target> {

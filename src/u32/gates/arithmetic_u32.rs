@@ -366,7 +366,7 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
     for U32ArithmeticGenerator<F, D>
 {
     fn id(&self) -> String {
-        format!("u32_arith_{}_{}", self.row, self.i)
+        format!("u32_arith")
     }
 
     fn dependencies(&self) -> Vec<Target> {
