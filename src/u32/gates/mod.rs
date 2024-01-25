@@ -24,8 +24,10 @@ use plonky2::{
         poseidon_mds::{PoseidonMdsGate, PoseidonMdsGenerator},
         public_input::PublicInputGate,
         random_access::{RandomAccessGate, RandomAccessGenerator},
-        reducing::{ReducingGate, ReducingGenerator},
+        reducing::ReducingGate,
+        reducing::ReducingGenerator,
         reducing_extension::ReducingExtensionGate,
+        reducing_extension::ReducingGenerator as ReducingExtensionGenerator,
     },
     hash::hash_types::RichField,
     impl_gate_serializer, impl_generator_serializer,
@@ -76,7 +78,7 @@ where
     C::Hasher: AlgebraicHasher<F>,
 {
     impl_generator_serializer! {
-        HashGeneratorSerializer<F, C, D>,
+        DefaultGeneratorSerializer,
         ArithmeticBaseGenerator<F, D>,
         ArithmeticExtensionGenerator<F, D>,
         BaseSplitGenerator<2>,
@@ -98,7 +100,7 @@ where
         RandomAccessGenerator<F, D>,
         RandomValueGenerator,
         ReducingGenerator<D>,
-        MulExtensionGenerator<F,D>,
+        ReducingExtensionGenerator<D>,
         SplitGenerator,
         WireSplitGenerator,
         // hash generators added
