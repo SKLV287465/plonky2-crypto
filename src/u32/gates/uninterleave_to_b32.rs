@@ -19,7 +19,7 @@ use plonky2::plonk::vars::{
     EvaluationTargets, EvaluationVars, EvaluationVarsBase, EvaluationVarsBaseBatch,
     EvaluationVarsBasePacked,
 };
-use plonky2::util::serialization::{Buffer, IoResult};
+use plonky2::util::serialization::{Buffer, IoResult, Read, Write};
 
 /// TODO: This code is grossly redundant to uninterleave_to_u32.rs, the diff is literally four lines (the calculation of coeff)
 /// Just wanted something up quickly, a cleaner more future-proof solution would be to make this one gate with
@@ -31,7 +31,7 @@ use plonky2::util::serialization::{Buffer, IoResult};
 ///
 /// Given a Goldilocks field element, treat it as 0bxyxyxy...
 /// and split it into two B32Targets, 0b0x0x0x... and 0b0y0y0y...
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct UninterleaveToB32Gate {
     pub num_ops: usize,
 }
@@ -252,15 +252,18 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for UninterleaveTo
         self.num_ops * (Self::NUM_BITS + 1 + 2)
     }
 
-    fn serialize(&self, _dst: &mut Vec<u8>, _: &CommonCircuitData<F, D>) -> IoResult<()> {
-        todo!()
+    fn serialize(&self, dst: &mut Vec<u8>, _: &CommonCircuitData<F, D>) -> IoResult<()> {
+        dst.write_usize(self.num_ops)?;
+        Ok(())
     }
 
-    fn deserialize(_src: &mut Buffer, _: &CommonCircuitData<F, D>) -> IoResult<Self>
+    fn deserialize(src: &mut Buffer, _: &CommonCircuitData<F, D>) -> IoResult<Self>
     where
         Self: Sized,
     {
-        todo!()
+        Ok(Self {
+            num_ops: src.read_usize()?,
+        })
     }
 }
 
@@ -313,7 +316,7 @@ impl<F: RichField + Extendable<D>, const D: usize> PackedEvaluableBase<F, D>
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct UninterleaveToB32Generator {
     gate: UninterleaveToB32Gate,
     row: usize,
@@ -325,7 +328,7 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
     for UninterleaveToB32Generator
 {
     fn id(&self) -> String {
-        format!("uninterleave_to_b32_{}_{}", self.row, self.i)
+        format!("uninterleave_to_b32")
     }
 
     fn dependencies(&self) -> Vec<Target> {
@@ -373,15 +376,22 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
         out_buffer.set_wire(x_odds_wire, F::from_canonical_u64(x_odds));
     }
 
-    fn serialize(&self, _dst: &mut Vec<u8>, _: &CommonCircuitData<F, D>) -> IoResult<()> {
-        todo!()
+    fn serialize(&self, dst: &mut Vec<u8>, c: &CommonCircuitData<F, D>) -> IoResult<()> {
+        self.gate.serialize(dst, c)?;
+        dst.write_usize(self.row)?;
+        dst.write_usize(self.i)?;
+        Ok(())
     }
 
-    fn deserialize(_src: &mut Buffer, _: &CommonCircuitData<F, D>) -> IoResult<Self>
+    fn deserialize(src: &mut Buffer, c: &CommonCircuitData<F, D>) -> IoResult<Self>
     where
         Self: Sized,
     {
-        todo!()
+        Ok(Self {
+            gate: UninterleaveToB32Gate::deserialize(src, c)?,
+            row: src.read_usize()?,
+            i: src.read_usize()?,
+        })
     }
 }
 

@@ -21,11 +21,11 @@ use plonky2::plonk::vars::{
     EvaluationTargets, EvaluationVars, EvaluationVarsBase, EvaluationVarsBaseBatch,
     EvaluationVarsBasePacked,
 };
-use plonky2::util::serialization::{Buffer, IoResult};
+use plonky2::util::serialization::{Buffer, IoResult, Read, Write};
 
 /// A gate to perform a subtraction on 32-bit limbs: given `x`, `y`, and `borrow`, it returns
 /// the result `x - y - borrow` and, if this underflows, a new `borrow`. Inputs are not range-checked.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct U32SubtractionGate<F: RichField + Extendable<D>, const D: usize> {
     pub num_ops: usize,
     _phantom: PhantomData<F>,
@@ -87,15 +87,19 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for U32Subtraction
         format!("{self:?}")
     }
 
-    fn serialize(&self, _dst: &mut Vec<u8>, _: &CommonCircuitData<F, D>) -> IoResult<()> {
-        todo!()
+    fn serialize(&self, dst: &mut Vec<u8>, c: &CommonCircuitData<F, D>) -> IoResult<()> {
+        dst.write_usize(self.num_ops)?;
+        Ok(())
     }
 
-    fn deserialize(_src: &mut Buffer, _: &CommonCircuitData<F, D>) -> IoResult<Self>
+    fn deserialize(src: &mut Buffer, c: &CommonCircuitData<F, D>) -> IoResult<Self>
     where
         Self: Sized,
     {
-        todo!()
+        Ok(Self {
+            num_ops: src.read_usize()?,
+            _phantom: PhantomData,
+        })
     }
 
     fn eval_unfiltered(&self, vars: EvaluationVars<F, D>) -> Vec<F::Extension> {
@@ -273,8 +277,8 @@ impl<F: RichField + Extendable<D>, const D: usize> PackedEvaluableBase<F, D>
     }
 }
 
-#[derive(Clone, Debug)]
-struct U32SubtractionGenerator<F: RichField + Extendable<D>, const D: usize> {
+#[derive(Clone, Debug, Default)]
+pub struct U32SubtractionGenerator<F: RichField + Extendable<D>, const D: usize> {
     gate: U32SubtractionGate<F, D>,
     row: usize,
     i: usize,
@@ -285,7 +289,7 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
     for U32SubtractionGenerator<F, D>
 {
     fn id(&self) -> String {
-        format!("u32_subtraction_{}_{}", self.row, self.i)
+        format!("u32_subtraction")
     }
 
     fn dependencies(&self) -> Vec<Target> {
@@ -345,15 +349,23 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
         }
     }
 
-    fn serialize(&self, _dst: &mut Vec<u8>, _: &CommonCircuitData<F, D>) -> IoResult<()> {
-        todo!()
+    fn serialize(&self, dst: &mut Vec<u8>, c: &CommonCircuitData<F, D>) -> IoResult<()> {
+        self.gate.serialize(dst, c)?;
+        dst.write_usize(self.row)?;
+        dst.write_usize(self.i)?;
+        Ok(())
     }
 
-    fn deserialize(_src: &mut Buffer, _: &CommonCircuitData<F, D>) -> IoResult<Self>
+    fn deserialize(src: &mut Buffer, c: &CommonCircuitData<F, D>) -> IoResult<Self>
     where
         Self: Sized,
     {
-        todo!()
+        Ok(Self {
+            gate: U32SubtractionGate::deserialize(src, c)?,
+            row: src.read_usize()?,
+            i: src.read_usize()?,
+            _phantom: PhantomData,
+        })
     }
 }
 

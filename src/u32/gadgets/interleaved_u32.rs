@@ -193,7 +193,7 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderB32<F, D>
 
     // x -> X [0 x 0 x 0 x 0 x]
     // y -> Y [0 y 0 y 0 y 0 y]
-    // X+Y
+    // X xor Y
     fn and_xor_u32_to_u32(&mut self, x: U32Target, y: U32Target) -> (U32Target, U32Target) {
         let x = self.interleave_u32(x);
         let y = self.interleave_u32(y);

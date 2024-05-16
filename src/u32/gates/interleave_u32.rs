@@ -19,7 +19,7 @@ use plonky2::plonk::vars::{
     EvaluationTargets, EvaluationVars, EvaluationVarsBase, EvaluationVarsBaseBatch,
     EvaluationVarsBasePacked,
 };
-use plonky2::util::serialization::{Buffer, IoResult};
+use plonky2::util::serialization::{Buffer, IoResult, Read, Write};
 
 /// Take a target x, which we assume is constrained to be a U32, and interleave it with zeroes (allows efficient XOR and AND)
 ///
@@ -29,7 +29,7 @@ use plonky2::util::serialization::{Buffer, IoResult};
 /// An example
 ///   x:             b0000_0000_0000_0000_1111_0111_0011_1110
 ///   x_interleaved: b0101_0101_0001_0101_0000_0101_0101_0100
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct U32InterleaveGate {
     pub num_ops: usize,
 }
@@ -215,15 +215,18 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for U32InterleaveG
         self.num_ops * (Self::NUM_BITS + 1 + 1)
     }
 
-    fn serialize(&self, _dst: &mut Vec<u8>, _: &CommonCircuitData<F, D>) -> IoResult<()> {
-        todo!()
+    fn serialize(&self, dst: &mut Vec<u8>, _: &CommonCircuitData<F, D>) -> IoResult<()> {
+        dst.write_usize(self.num_ops)?;
+        Ok(())
     }
 
-    fn deserialize(_src: &mut Buffer, _: &CommonCircuitData<F, D>) -> IoResult<Self>
+    fn deserialize(src: &mut Buffer, _: &CommonCircuitData<F, D>) -> IoResult<Self>
     where
         Self: Sized,
     {
-        todo!()
+        Ok(Self {
+            num_ops: src.read_usize()?,
+        })
     }
 }
 
@@ -265,7 +268,7 @@ impl<F: RichField + Extendable<D>, const D: usize> PackedEvaluableBase<F, D> for
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct U32InterleaveGenerator {
     gate: U32InterleaveGate,
     row: usize,
@@ -277,7 +280,7 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
     for U32InterleaveGenerator
 {
     fn id(&self) -> String {
-        format!("u32_interleave_{}_{}", self.row, self.i)
+        format!("u32_interleave")
     }
 
     fn dependencies(&self) -> Vec<Target> {
@@ -317,15 +320,23 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
         out_buffer.set_wire(x_interleaved_wire, F::from_canonical_u64(x_interleaved));
     }
 
-    fn serialize(&self, _dst: &mut Vec<u8>, _: &CommonCircuitData<F, D>) -> IoResult<()> {
-        todo!()
+    fn serialize(&self, dst: &mut Vec<u8>, c: &CommonCircuitData<F, D>) -> IoResult<()> {
+        self.gate.serialize(dst, c)?;
+        dst.write_usize(self.row)?;
+        dst.write_usize(self.i)?;
+        Ok(())
     }
 
-    fn deserialize(_src: &mut Buffer, _: &CommonCircuitData<F, D>) -> IoResult<Self>
+    fn deserialize(src: &mut Buffer, c: &CommonCircuitData<F, D>) -> IoResult<Self>
     where
         Self: Sized,
     {
-        todo!()
+        let gate = U32InterleaveGate::deserialize(src, c)?;
+        Ok(Self {
+            gate,
+            row: src.read_usize()?,
+            i: src.read_usize()?,
+        })
     }
 }
 

@@ -2,6 +2,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 use core::marker::PhantomData;
 use plonky2::plonk::circuit_data::CommonCircuitData;
+use serde::{Deserialize, Serialize};
 
 use plonky2::field::extension::Extendable;
 use plonky2::hash::hash_types::RichField;
@@ -9,14 +10,14 @@ use plonky2::iop::generator::{GeneratedValues, SimpleGenerator};
 use plonky2::iop::target::Target;
 use plonky2::iop::witness::{PartitionWitness, Witness};
 use plonky2::plonk::circuit_builder::CircuitBuilder;
-use plonky2::util::serialization::{Buffer, IoResult};
+use plonky2::util::serialization::{Buffer, IoResult, Read, Write};
 
 use crate::u32::gates::add_many_u32::U32AddManyGate;
 use crate::u32::gates::arithmetic_u32::U32ArithmeticGate;
 use crate::u32::gates::subtraction_u32::U32SubtractionGate;
 use crate::u32::witness::GeneratedValuesU32;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize)]
 pub struct U32Target(pub Target);
 
 pub trait CircuitBuilderU32<F: RichField + Extendable<D>, const D: usize> {
@@ -238,8 +239,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderU32<F, D>
     }
 }
 
-#[derive(Debug)]
-struct SplitToU32Generator<F: RichField + Extendable<D>, const D: usize> {
+#[derive(Debug, Default)]
+pub struct SplitToU32Generator<F: RichField + Extendable<D>, const D: usize> {
     x: Target,
     low: U32Target,
     high: U32Target,
@@ -267,15 +268,26 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
         out_buffer.set_u32_target(self.high, high);
     }
 
-    fn serialize(&self, _dst: &mut Vec<u8>, c: &CommonCircuitData<F, D>) -> IoResult<()> {
-        todo!()
+    fn serialize(&self, dst: &mut Vec<u8>, c: &CommonCircuitData<F, D>) -> IoResult<()> {
+        dst.write_target(self.x)?;
+        dst.write_target(self.low.0)?;
+        dst.write_target(self.high.0)?;
+        Ok(())
     }
 
-    fn deserialize(_src: &mut Buffer, c: &CommonCircuitData<F, D>) -> IoResult<Self>
+    fn deserialize(src: &mut Buffer, c: &CommonCircuitData<F, D>) -> IoResult<Self>
     where
         Self: Sized,
     {
-        todo!()
+        let x = src.read_target()?;
+        let low = src.read_target()?;
+        let high = src.read_target()?;
+        Ok(Self {
+            x,
+            low: U32Target(low),
+            high: U32Target(high),
+            _phantom: PhantomData,
+        })
     }
 }
 

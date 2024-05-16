@@ -18,13 +18,13 @@ use plonky2::plonk::circuit_builder::CircuitBuilder;
 use plonky2::plonk::circuit_data::{CircuitConfig, CommonCircuitData};
 use plonky2::plonk::vars::{EvaluationTargets, EvaluationVars, EvaluationVarsBase};
 use plonky2::util::ceil_div_usize;
-use plonky2::util::serialization::{Buffer, IoResult};
+use plonky2::util::serialization::{Buffer, IoResult, Read, Write};
 
 const LOG2_MAX_NUM_ADDENDS: usize = 4;
 const MAX_NUM_ADDENDS: usize = 24;
 
 /// A gate to perform addition on `num_addends` different 32-bit values, plus a small carry
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct U32AddManyGate<F: RichField + Extendable<D>, const D: usize> {
     pub num_addends: usize,
     pub num_ops: usize,
@@ -91,15 +91,23 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for U32AddManyGate
         format!("{self:?}")
     }
 
-    fn serialize(&self, _dst: &mut Vec<u8>, _: &CommonCircuitData<F, D>) -> IoResult<()> {
-        todo!()
+    fn serialize(&self, dst: &mut Vec<u8>, _: &CommonCircuitData<F, D>) -> IoResult<()> {
+        dst.write_usize(self.num_addends)?;
+        dst.write_usize(self.num_ops)?;
+        Ok(())
     }
 
-    fn deserialize(_src: &mut Buffer, _: &CommonCircuitData<F, D>) -> IoResult<Self>
+    fn deserialize(src: &mut Buffer, _: &CommonCircuitData<F, D>) -> IoResult<Self>
     where
         Self: Sized,
     {
-        todo!()
+        let num_addends = src.read_usize()?;
+        let num_ops = src.read_usize()?;
+        Ok(Self {
+            num_addends,
+            num_ops,
+            _phantom: PhantomData,
+        })
     }
 
     fn eval_unfiltered(&self, vars: EvaluationVars<F, D>) -> Vec<F::Extension> {
@@ -281,8 +289,8 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for U32AddManyGate
     }
 }
 
-#[derive(Clone, Debug)]
-struct U32AddManyGenerator<F: RichField + Extendable<D>, const D: usize> {
+#[derive(Clone, Debug, Default)]
+pub struct U32AddManyGenerator<F: RichField + Extendable<D>, const D: usize> {
     gate: U32AddManyGate<F, D>,
     row: usize,
     i: usize,
@@ -293,7 +301,7 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
     for U32AddManyGenerator<F, D>
 {
     fn id(&self) -> String {
-        format!("u32_add_many_{}_{}", self.row, self.i)
+        format!("u32_add_many")
     }
 
     fn dependencies(&self) -> Vec<Target> {
@@ -356,15 +364,26 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
         }
     }
 
-    fn serialize(&self, _dst: &mut Vec<u8>, _: &CommonCircuitData<F, D>) -> IoResult<()> {
-        todo!()
+    fn serialize(&self, dst: &mut Vec<u8>, c: &CommonCircuitData<F, D>) -> IoResult<()> {
+        self.gate.serialize(dst, c)?;
+        dst.write_usize(self.row)?;
+        dst.write_usize(self.i)?;
+        Ok(())
     }
 
-    fn deserialize(_src: &mut Buffer, _: &CommonCircuitData<F, D>) -> IoResult<Self>
+    fn deserialize(src: &mut Buffer, c: &CommonCircuitData<F, D>) -> IoResult<Self>
     where
         Self: Sized,
     {
-        todo!()
+        let gate = U32AddManyGate::<F, D>::deserialize(src, c)?;
+        let row = src.read_usize()?;
+        let i = src.read_usize()?;
+        Ok(Self {
+            gate,
+            row,
+            i,
+            _phantom: PhantomData,
+        })
     }
 }
 
